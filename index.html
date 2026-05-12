@@ -139,6 +139,16 @@ main{padding:13px 13px 0;}
 .set-inp{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 6px;font-size:14px;color:var(--text);font-family:'Barlow',sans-serif;font-weight:600;text-align:center;outline:none;width:100%;transition:all .15s;-webkit-appearance:none;}
 .set-inp:focus{border-color:var(--ca,var(--red));background:var(--bg4);}
 .set-inp::placeholder{color:#202020;}
+/* HIDE SPINNERS ON NUMBER INPUTS */
+.set-inp::-webkit-outer-spin-button,
+.set-inp::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.set-inp[type=number] {
+  -moz-appearance: textfield;
+}
+
 .timer-btn{width:30px;height:30px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:#2a2a2a;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .timer-btn.active{background:#041428;border-color:var(--acc);color:var(--acc);}
 .orm-line{font-family:'Oswald',sans-serif;font-size:10px;color:var(--gold);text-align:center;margin-top:3px;letter-spacing:.5px;min-height:14px;}
@@ -235,6 +245,9 @@ main{padding:13px 13px 0;}
 .bw-inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'Oswald',sans-serif;font-size:15px;color:var(--text);outline:none;transition:border-color .15s;}
 .bw-inp:focus{border-color:var(--acc);}
 .bw-inp::placeholder{color:#202020;}
+.bw-inp::-webkit-outer-spin-button,
+.bw-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.bw-inp[type=number] { -moz-appearance: textfield; }
 .bw-btn{padding:10px 16px;background:var(--acc);color:#fff;border:none;border-radius:7px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;}
 
 /* ── HISTORY ── */
@@ -254,17 +267,6 @@ main{padding:13px 13px 0;}
 .hist-pill{font-family:'Oswald',sans-serif;font-size:11px;padding:3px 9px;border-radius:4px;background:var(--bg3);color:var(--muted);}
 .hist-pill.wu{border:1px solid #0d1f2d;color:#1a8fff;}
 .hist-notes{font-family:'Barlow',sans-serif;font-size:12px;color:#3a3a3a;font-style:italic;padding:8px 13px;border-top:1px solid #0f0f0f;}
-
-/* ── COMMUNITY ── */
-.comm-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:10px;}
-.comm-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--text);text-transform:uppercase;margin-bottom:7px;}
-.comm-sub{font-family:'Barlow',sans-serif;font-size:13px;color:var(--sub);line-height:1.5;margin-bottom:11px;}
-.comm-code-box{background:var(--bg3);border:1px solid var(--acc);border-radius:8px;padding:14px;text-align:center;margin-top:10px;}
-.comm-code{font-family:'Oswald',sans-serif;font-size:30px;font-weight:700;letter-spacing:8px;color:var(--acc);}
-.comm-code-lbl{font-family:'Oswald',sans-serif;font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px;}
-.comm-preview{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;}
-.comm-preview-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;}
-.comm-preview-detail{font-family:'Oswald',sans-serif;font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.5px;}
 
 /* ── BACKUP ── */
 .bk-section{margin-bottom:18px;}
@@ -324,9 +326,6 @@ main{padding:13px 13px 0;}
     <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
       <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History
     </button>
-    <button class="tab-btn" data-tab="community" onclick="switchTab('community')">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Squad
-    </button>
     <button class="tab-btn" data-tab="backup" onclick="switchTab('backup')">
       <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Backup
     </button>
@@ -377,7 +376,7 @@ main{padding:13px 13px 0;}
     <button class="btn-danger" style="margin-top:24px;display:none" id="b-delete-btn" onclick="deleteRoutine()">Delete Routine</button>
     <div style="height:60px"></div>
   </div>
-  <button style="position:absolute;bottom:calc(20px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--bg3);color:var(--sub);border:1px solid var(--border);border-radius:20px;padding:9px 22px;font-family:'Oswald',sans-serif;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px;" onclick="closeBuilder()">Cancel</button>
+  <button id="builder-cancel-btn" style="position:absolute;bottom:calc(20px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--bg3);color:var(--sub);border:1px solid var(--border);border-radius:20px;padding:9px 22px;font-family:'Oswald',sans-serif;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px;" onclick="closeBuilder()">Cancel</button>
 </div>
 
 <div class="picker-modal" id="picker-modal">
@@ -421,7 +420,6 @@ main{padding:13px 13px 0;}
 ════════════════════════════════ */
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const COLORS = ["var(--acc)","#f97316","#eab308","#22c55e","#3b82f6","#a855f7","#06b6d4","#ec4899"];
-const JSONBIN_KEY = "$2a$10$7QkVLz6OMKxJH9PUz5LqMOBRt4xz5pLQZy6FdZ8kFm3lNqXpGRp8O";
 
 const DB = [
   {id:"c1",name:"Flat Bench Press",muscle:"Chest",group:"Chest",rest:120},
@@ -529,7 +527,7 @@ function saveProfiles(){
 /* ════════════════════════════════
    APP DATA
 ════════════════════════════════ */
-let D = {routines:[],history:{},customDB:[],bodyweight:[],commCodes:{}};
+let D = {routines:[],history:{},customDB:[],bodyweight:[]};
 // Active session state
 let activeRtnId = null;
 let trainDay = null;
@@ -544,8 +542,6 @@ let P = {filter:"All",sel:new Set()};
 // Progress
 let progDay = null;
 let openProgCards = {};
-// Planner draft (per-day in builder)
-let commFetched = null;
 let autoSaveTimer = null;
 
 function loadData(){
@@ -554,7 +550,6 @@ function loadData(){
   if(!D.history)D.history={};
   if(!D.customDB)D.customDB=[];
   if(!D.bodyweight)D.bodyweight=[];
-  if(!D.commCodes)D.commCodes={};
   if(D.routines.length===0){D.routines=JSON.parse(JSON.stringify(DEFAULT_ROUTINES));saveData();}
   trainDay=getTodayShort();
   progDay=getTodayShort();
@@ -859,8 +854,8 @@ function exCardHTML(exDef,rtn,isCustom=false,idx=0){
           <div class="set-row">
             <span class="set-num" id="snum-${exDef.id}-${wk}" style="font-size:10px;color:#1a8fff">W${wi+1}</span>
             <div></div>
-            <input class="set-inp" style="border-color:#1e3a5a" placeholder="kg" value="${s.w||""}" oninput="setLog('${exDef.id}','${wk}','w',this.value,window._rtn)"/>
-            <input class="set-inp" style="border-color:#1e3a5a" placeholder="reps" value="${s.r||""}" oninput="setLog('${exDef.id}','${wk}','r',this.value,window._rtn)"/>
+            <input class="set-inp" type="number" inputmode="decimal" step="any" style="border-color:#1e3a5a" placeholder="kg" value="${s.w||""}" oninput="setLog('${exDef.id}','${wk}','w',this.value,window._rtn)"/>
+            <input class="set-inp" type="number" inputmode="numeric" pattern="[0-9]*" style="border-color:#1e3a5a" placeholder="reps" value="${s.r||""}" oninput="setLog('${exDef.id}','${wk}','r',this.value,window._rtn)"/>
             <div></div>
           </div>
         </div>`;
@@ -876,8 +871,8 @@ function exCardHTML(exDef,rtn,isCustom=false,idx=0){
         <div class="set-row">
           <span class="set-num${filled?" done":""}" id="snum-${exDef.id}-${i}">${i+1}</span>
           <button class="wu-toggle${wuOn?" on":""}" id="wu-${exDef.id}-${i}" onclick="toggleWU('${exDef.id}',${i},window._rtn)">W</button>
-          <input class="set-inp" placeholder="kg/lb" value="${s.w||""}" oninput="setLog('${exDef.id}',${i},'w',this.value,window._rtn)" style="--ca:${rtn.color}"/>
-          <input class="set-inp" placeholder="reps" value="${s.r||""}" oninput="setLog('${exDef.id}',${i},'r',this.value,window._rtn)" style="--ca:${rtn.color}"/>
+          <input class="set-inp" type="number" inputmode="decimal" step="any" placeholder="kg/lb" value="${s.w||""}" oninput="setLog('${exDef.id}',${i},'w',this.value,window._rtn)" style="--ca:${rtn.color}"/>
+          <input class="set-inp" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="reps" value="${s.r||""}" oninput="setLog('${exDef.id}',${i},'r',this.value,window._rtn)" style="--ca:${rtn.color}"/>
           ${exDef.rest?`<button class="timer-btn" onclick="startTimer(${exDef.rest},'${exDb.name}')">⏱</button>`:`<div></div>`}
         </div>
         <div class="orm-line" id="orm-${exDef.id}-${i}">${ormStr}</div>
@@ -1121,12 +1116,18 @@ function saveBuilder(){
   const obj={id:B.id||("rtn_"+Date.now()),dayTag:B.dayTag,name:B.name,theme:B.theme,color:B.color,exercises:B.exs};
   if(B.id){const idx=D.routines.findIndex(r=>r.id===B.id);if(idx>=0)D.routines[idx]=obj;}
   else D.routines.push(obj);
-  saveData();closeBuilder();renderRoutines();toast("Routine saved");
+  saveData();closeBuilder();
+  const activeTab=document.querySelector('.tab-btn.active').dataset.tab;
+  if(activeTab==='train')renderTrain();else renderRoutines();
+  toast("Routine saved");
 }
 function deleteRoutine(){
   if(!confirm("Delete this routine?"))return;
   D.routines=D.routines.filter(r=>r.id!==B.id);
-  saveData();closeBuilder();renderRoutines();toast("Routine deleted");
+  saveData();closeBuilder();
+  const activeTab=document.querySelector('.tab-btn.active').dataset.tab;
+  if(activeTab==='train')renderTrain();else renderRoutines();
+  toast("Routine deleted");
 }
 
 /* ════════════════════════════════
@@ -1233,7 +1234,7 @@ function renderProgress(){
     <div class="section-lbl" style="margin-top:0">Bodyweight</div>
     ${latestBW?`<div style="font-family:'Oswald';font-size:13px;color:var(--muted);margin-bottom:8px">Latest: <span style="color:var(--gold);font-size:16px;font-weight:700">${latestBW.kg}kg</span> — ${latestBW.date}</div>`:""}
     <div class="bw-row">
-      <input class="bw-inp" id="bw-inp" placeholder="Today's weight (kg)" type="number" step="0.1"/>
+      <input class="bw-inp" id="bw-inp" placeholder="Today's weight (kg)" type="number" inputmode="decimal" step="0.1"/>
       <button class="bw-btn" onclick="logBW()">Log</button>
     </div>
     <div id="bw-chart" style="width:100%"></div>
@@ -1344,96 +1345,6 @@ function deleteSession(date,idx){
 }
 
 /* ════════════════════════════════
-   COMMUNITY (SQUAD)
-════════════════════════════════ */
-function renderCommunity(){
-  document.getElementById("main").innerHTML=`
-    <div class="comm-card">
-      <div class="comm-title">Share a Routine</div>
-      <div class="comm-sub">Upload any of your saved routines and get a short code. Send it to your training partner — they enter the code to load your exact template.</div>
-      <label class="inp-lbl" style="margin-top:4px">Select Routine</label>
-      <select class="inp" id="share-rtn-sel" style="margin-bottom:8px">
-        ${D.routines.map(r=>`<option value="${r.id}">${r.dayTag} — ${r.name}: ${r.theme}</option>`).join("")}
-      </select>
-      <input class="inp" id="share-rtn-label" placeholder="Give it a name (e.g. 'My Push Day')" style="margin-bottom:8px"/>
-      <div style="display:flex;gap:7px">
-        <button class="btn-red" style="flex:1" onclick="shareRoutine()">Generate Code</button>
-        <button class="btn-ghost" style="flex:1;width:auto" onclick="exportRoutines()">Save to File</button>
-      </div>
-      <div id="share-result"></div>
-    </div>
-    <div class="comm-card">
-      <div class="comm-title">Load a Routine</div>
-      <div class="comm-sub">Enter a code from a teammate, or import a .json file they shared directly.</div>
-      <input class="inp" id="load-code" placeholder="Enter code or bin ID" style="margin-bottom:8px;letter-spacing:3px;text-transform:uppercase"/>
-      <div style="display:flex;gap:7px">
-        <button class="btn-red" style="flex:1" onclick="loadRoutineCode()">Load</button>
-        <button class="btn-ghost" style="flex:1;width:auto" onclick="document.getElementById('file-import-tpl').click()">From File</button>
-      </div>
-      <div id="load-result"></div>
-    </div>`;
-}
-
-async function shareRoutine(){
-  const id=document.getElementById("share-rtn-sel")?.value;
-  const label=document.getElementById("share-rtn-label")?.value?.trim();
-  const rtn=getRtn(id);if(!rtn){toast("Select a routine");return;}
-  const name=label||rtn.name;
-  const resultEl=document.getElementById("share-result");
-  resultEl.innerHTML=`<div class="chart-empty">Uploading…</div>`;
-  try{
-    const res=await fetch("https://api.jsonbin.io/v3/b",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY,"X-Bin-Name":name,"X-Bin-Private":"false"},
-      body:JSON.stringify({name,routine:rtn,created:todayISO(),profile:activeProfile})
-    });
-    const data=await res.json();
-    const binId=data?.metadata?.id;if(!binId)throw new Error("No bin ID");
-    const code=binId.slice(-6).toUpperCase();
-    if(!D.commCodes)D.commCodes={};
-    D.commCodes[code]=binId;saveData();
-    resultEl.innerHTML=`<div class="comm-code-box">
-      <div class="comm-code">${code}</div>
-      <div class="comm-code-lbl">Share this code with your squad</div>
-    </div>`;
-  }catch{
-    // Fallback to file
-    exportRoutines();
-    resultEl.innerHTML=`<div class="comm-preview"><div class="comm-preview-name">Online unavailable</div><div class="comm-preview-detail">File downloaded — share it directly.</div></div>`;
-  }
-}
-async function loadRoutineCode(){
-  const raw=document.getElementById("load-code")?.value?.trim();
-  if(!raw){toast("Enter a code");return;}
-  const resultEl=document.getElementById("load-result");
-  resultEl.innerHTML=`<div class="chart-empty">Loading…</div>`;
-  try{
-    let binId=raw;
-    if(D.commCodes?.[raw.toUpperCase()])binId=D.commCodes[raw.toUpperCase()];
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{"X-Master-Key":JSONBIN_KEY}});
-    const data=await res.json();
-    const rec=data?.record;
-    if(!rec?.routine)throw new Error("Invalid");
-    commFetched=rec;
-    resultEl.innerHTML=`<div class="comm-preview">
-      <div class="comm-preview-name">${rec.name||"Unnamed"}</div>
-      <div class="comm-preview-detail">${rec.routine.dayTag} · ${rec.routine.name} — ${rec.routine.theme} · ${rec.routine.exercises?.length||0} exercises · ${rec.created||"—"}</div>
-      <button class="btn-red" style="margin-top:10px" onclick="applyFetchedRoutine()">Add to My Routines</button>
-    </div>`;
-  }catch{
-    resultEl.innerHTML=`<div class="comm-preview" style="border-color:var(--red)"><div class="comm-preview-name" style="color:var(--red)">Not found</div><div class="comm-preview-detail">Check the code, or ask them to share the .json file instead.</div></div>`;
-  }
-}
-function applyFetchedRoutine(){
-  if(!commFetched?.routine)return;
-  const r=JSON.parse(JSON.stringify(commFetched.routine));
-  r.id="rtn_"+Date.now();
-  D.routines.push(r);saveData();
-  toast(`✓ "${r.name}" added to your routines`);commFetched=null;
-  renderCommunity();
-}
-
-/* ════════════════════════════════
    RENDER: BACKUP
 ════════════════════════════════ */
 function renderBackup(){
@@ -1465,7 +1376,7 @@ function renderBackup(){
     <div class="bk-section">
       <div class="bk-lbl-title">Routines Only</div>
       <div class="bk-card">
-        <div class="bk-row"><div><div class="bk-row-lbl">Export Routines</div><div class="bk-row-sub">Share templates with your squad</div></div><button class="bk-btn bk-btn-r" onclick="exportRoutines()">Export</button></div>
+        <div class="bk-row"><div><div class="bk-row-lbl">Export Routines</div><div class="bk-row-sub">Save routines to file</div></div><button class="bk-btn bk-btn-r" onclick="exportRoutines()">Export</button></div>
         <div class="bk-row"><div><div class="bk-row-lbl">Import Routines</div><div class="bk-row-sub">Add routines from a file</div></div><button class="bk-btn bk-btn-g" onclick="document.getElementById('file-import-tpl').click()">Import</button></div>
       </div>
     </div>
@@ -1498,10 +1409,8 @@ function importFile(e,mode){
           D=Object.assign({},D,imp);saveData();toast("✓ Full backup restored");renderBackup();
         }else throw new Error("Invalid master file");
       }else if(mode==="tpl"){
-        // Could be squad share file OR routines export
         if(imp._templates){
-          // Old format compat
-          toast("Use the Squad tab to load templates");
+          toast("Import templates via Backup tab");
         }else if(imp.routines&&Array.isArray(imp.routines)){
           let added=0;
           imp.routines.forEach(r=>{
@@ -1511,7 +1420,6 @@ function importFile(e,mode){
           if(imp.customDB)imp.customDB.forEach(c=>{if(!D.customDB.find(x=>x.id===c.id))D.customDB.push(c);});
           saveData();toast(`✓ ${added} routine(s) added`);renderRoutines();
         }else if(imp.routine){
-          // Single routine from squad share
           const r=JSON.parse(JSON.stringify(imp.routine));
           r.id="rtn_"+Date.now();
           D.routines.push(r);saveData();toast(`✓ "${r.name}" added`);renderRoutines();
@@ -1533,7 +1441,7 @@ function importFile(e,mode){
 
 function clearHistory(){if(!confirm("Delete all session history?"))return;D.history={};saveData();toast("History cleared");renderBackup();}
 function resetRoutines(){if(!confirm("Reset routines to defaults?"))return;D.routines=JSON.parse(JSON.stringify(DEFAULT_ROUTINES));D.customDB=[];saveData();toast("Routines reset");renderBackup();}
-function wipeProfile(){if(!confirm(`Wipe ALL data for "${activeProfile}"? Cannot be undone.`))return;D={routines:[],history:{},customDB:[],bodyweight:[],commCodes:{}};D.routines=JSON.parse(JSON.stringify(DEFAULT_ROUTINES));saveData();clearAutoSave();toast("Profile wiped");renderBackup();}
+function wipeProfile(){if(!confirm(`Wipe ALL data for "${activeProfile}"? Cannot be undone.`))return;D={routines:[],history:{},customDB:[],bodyweight:[]};D.routines=JSON.parse(JSON.stringify(DEFAULT_ROUTINES));saveData();clearAutoSave();toast("Profile wiped");renderBackup();}
 
 /* ════════════════════════════════
    PROFILES
@@ -1561,7 +1469,7 @@ function switchProfile(name){
   activeProfile=name;
   document.getElementById("profile-chip-name").textContent=name;
   saveProfiles();
-  D={routines:[],history:{},customDB:[],bodyweight:[],commCodes:{}};
+  D={routines:[],history:{},customDB:[],bodyweight:[]};
   activeRtnId=null;sessionLogs={};openCards={};editHistDate=null;
   loadData();closeProfileModal();switchTab("train");toast("Switched to "+name);
 }
@@ -1575,16 +1483,32 @@ function deleteProfile(name,e){
 }
 
 /* ════════════════════════════════
-   KEYBOARD HIDE TABBAR
+   KEYBOARD HIDE TABBAR & SCROLL FIX
 ════════════════════════════════ */
 document.addEventListener("focusin",e=>{
-  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")
-    document.getElementById("tabbar").style.display="none";
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") {
+    const tabbar = document.getElementById("tabbar");
+    if(tabbar) tabbar.style.display="none";
+    
+    // Hide the floating cancel button when keyboard is up
+    const bCancel = document.getElementById("builder-cancel-btn");
+    if(bCancel) bCancel.style.display="none";
+
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }
 });
 document.addEventListener("focusout",()=>{
   setTimeout(()=>{
-    if(document.activeElement.tagName!=="INPUT"&&document.activeElement.tagName!=="TEXTAREA")
-      document.getElementById("tabbar").style.display="flex";
+    if(document.activeElement.tagName!=="INPUT"&&document.activeElement.tagName!=="TEXTAREA") {
+      const tabbar = document.getElementById("tabbar");
+      if(tabbar) tabbar.style.display="flex";
+
+      // Show the floating cancel button again when keyboard closes
+      const bCancel = document.getElementById("builder-cancel-btn");
+      if(bCancel) bCancel.style.display="block";
+    }
   },80);
 });
 
@@ -1601,7 +1525,6 @@ function switchTab(tab){
   else if(tab==="routines")renderRoutines();
   else if(tab==="progress")renderProgress();
   else if(tab==="history")renderHistory();
-  else if(tab==="community")renderCommunity();
   else if(tab==="backup")renderBackup();
   window.scrollTo({top:0,behavior:"smooth"});
 }
