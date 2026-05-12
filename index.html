@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<title>Area Boys Gym Tracker</title>
+<title>IRON LOG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -175,9 +175,10 @@ main{padding:13px 13px 0;}
 .overlay-save{background:none;border:none;color:var(--acc);font-family:'Oswald',sans-serif;font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;text-transform:uppercase;padding:6px 0;}
 .overlay-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;}
 .overlay-body::-webkit-scrollbar{display:none;}
+
 /* Builder exercise row */
 .b-ex-row{display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
-.b-ex-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:var(--text);}
+.b-ex-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .b-ex-muscle{font-family:'Oswald',sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
 .b-options{display:flex;gap:4px;align-items:center;margin-left:auto;flex-shrink:0;}
 .b-inp{width:38px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:7px 4px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;color:var(--text);outline:none;text-align:center;}
@@ -185,7 +186,7 @@ main{padding:13px 13px 0;}
 .b-inp.wide{width:60px;}
 .b-toggle{padding:4px 7px;border-radius:5px;border:1px solid var(--border);background:none;font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;cursor:pointer;color:var(--muted);letter-spacing:.5px;transition:all .15s;}
 .b-toggle.on{border-color:var(--tc);color:var(--tc);background:var(--bg4);}
-.b-del{background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;margin-left:2px;}
+.b-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:8px;display:flex;align-items:center;justify-content:center;}
 .b-del:active{color:var(--red);}
 
 /* Color swatch */
@@ -298,7 +299,7 @@ main{padding:13px 13px 0;}
 
 <div id="app">
   <header class="hdr">
-    <div class="wordmark">Gym<em>Tracker</em></div>
+    <div class="wordmark">IRON<em>LOG</em></div>
     <div class="hdr-right">
       <div class="streak-chip">
         <span class="streak-fire">🔥</span>
@@ -373,7 +374,7 @@ main{padding:13px 13px 0;}
     </div>
     <div class="section-lbl">Exercises</div>
     <div id="b-ex-list"></div>
-    <button class="btn-ghost" style="margin-top:8px" onclick="openPicker()">+ Add from Database</button>
+    <button class="btn-ghost" style="margin-top:8px; border-style:dashed;" onclick="openPicker('builder')">+ Add from Database</button>
     <button class="btn-danger" style="margin-top:24px;display:none" id="b-delete-btn" onclick="deleteRoutine()">Delete Routine</button>
     <div style="height:60px"></div>
   </div>
@@ -417,7 +418,7 @@ main{padding:13px 13px 0;}
 
 <script>
 /* ════════════════════════════════
-   CONSTANTS
+   CONSTANTS & GLOBALS
 ════════════════════════════════ */
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const COLORS = ["var(--acc)","#b33939","#c29b4e","#5a7d53","#4a6b82","#735c7a","#546e7a","#8c5b5b"];
@@ -536,14 +537,21 @@ let sessionLogs = {};  // {exId: {0:{w,r,wu}, 1:...}}
 let openCards = {};
 let editHistDate = null;
 let editHistIdx = null;
+let _lastConfetti = false;
+
 // Builder state
 let B = {id:null,name:"",theme:"",color:COLORS[0],dayTag:"Mon",exs:[]};
 // Picker state
-let P = {filter:"All",sel:new Set()};
+let P = {filter:"All",sel:new Set(), mode:"builder"};
 // Progress
 let progDay = null;
 let openProgCards = {};
 let autoSaveTimer = null;
+
+// PR Data Cache (O(1) speeds to stop UI freezes)
+let _prCache = {};
+let _ormCache = {};
+function clearHistoryCaches() { _prCache = {}; _ormCache = {}; }
 
 function loadData(){
   try{const d=JSON.parse(localStorage.getItem(profileKey())||"null");if(d)D=d;}catch{}
@@ -555,7 +563,10 @@ function loadData(){
   trainDay=getTodayShort();
   progDay=getTodayShort();
 }
-function saveData(){try{localStorage.setItem(profileKey(),JSON.stringify(D));}catch{}}
+function saveData(){
+  try{localStorage.setItem(profileKey(),JSON.stringify(D));}catch{}
+  clearHistoryCaches();
+}
 
 /* ════════════════════════════════
    HELPERS
@@ -567,19 +578,24 @@ function epley(w,r){if(!w||!r||r<1)return 0;return r===1?Math.round(w):Math.roun
 function getExDb(id){return DB.find(e=>e.id===id)||D.customDB.find(e=>e.id===id)||{name:"Unknown",muscle:"?",group:"Custom",rest:60};}
 function getRtn(id){return D.routines.find(r=>r.id===id)||null;}
 
-/* PR detection — only working sets */
+/* PR detection — cached for blazing fast O(1) reads */
 function getBestWeight(exId,beforeDate){
+  const cacheKey = exId + "_" + beforeDate;
+  if(_prCache[cacheKey] !== undefined) return _prCache[cacheKey];
+
   let best=0;
   Object.entries(D.history).forEach(([date,sessions])=>{
     if(beforeDate&&date>=beforeDate)return;
     sessions.forEach(sess=>{
       const sets=sess.logs[exId]||{};
       Object.entries(sets).forEach(([k,s])=>{
-        if(s.wu)return;
-        const w=parseFloat(s.w)||0;if(w>best)best=w;
+        if(!isNaN(k) && !s.wu){
+          const w=parseFloat(s.w)||0;if(w>best)best=w;
+        }
       });
     });
   });
+  _prCache[cacheKey] = best;
   return best;
 }
 function isPR(exId,weight){
@@ -588,34 +604,44 @@ function isPR(exId,weight){
   return w>prev&&prev>0;
 }
 function getBest1RM(exId){
+  if(_ormCache[exId] !== undefined) return _ormCache[exId];
+
   let best=0;
   Object.values(D.history).forEach(sessions=>{
     sessions.forEach(sess=>{
       const sets=sess.logs[exId]||{};
       Object.entries(sets).forEach(([k,s])=>{
-        if(s.wu)return;
-        const o=epley(parseFloat(s.w)||0,parseFloat(s.r)||0);
-        if(o>best)best=o;
+        if(!isNaN(k) && !s.wu){
+          const o=epley(parseFloat(s.w)||0,parseFloat(s.r)||0);
+          if(o>best)best=o;
+        }
       });
     });
   });
+  _ormCache[exId] = best;
   return best;
 }
 
 /* Only count working sets toward progress */
-function countDoneWorking(exId,totalSets){
-  const sets=sessionLogs[exId]||{};
-  return Object.entries(sets).filter(([k,s])=>!s.wu&&(s.w||s.r)).length;
+function countDoneWorking(exId){
+  const sl=sessionLogs[exId]||{};
+  return Object.entries(sl).filter(([k,s])=>!isNaN(k)&&!s.wu&&(s.w||s.r)).length;
+}
+function getActiveTotal(exId, defaultSets){
+  const sl=sessionLogs[exId]||{};
+  let w=0;for(let i=0;i<defaultSets;i++){if(sl[i]&&sl[i].wu)w++;}
+  return Math.max(0,defaultSets-w);
 }
 function sessionProgress(rtn){
   if(!rtn)return{done:0,total:0,pct:0,vol:0};
-  const total=rtn.exercises.reduce((a,e)=>a+e.sets,0);
-  let done=0,vol=0;
+  let done=0,vol=0,total=0;
   rtn.exercises.forEach(ex=>{
+    if(isSkipped(ex.id)) return;
+    total+=getActiveTotal(ex.id, ex.sets);
     const sl=sessionLogs[ex.id]||{};
     Object.entries(sl).forEach(([k,s])=>{
-      if(!s.wu&&(s.w||s.r))done++;
-      if(!s.wu&&s.w&&s.r)vol+=Math.round((parseFloat(s.w)||0)*(parseFloat(s.r)||0));
+      if(!isNaN(k)&&!s.wu&&(s.w||s.r))done++;
+      if(!isNaN(k)&&!s.wu&&s.w&&s.r)vol+=Math.round((parseFloat(s.w)||0)*(parseFloat(s.r)||0));
     });
   });
   return{done,total,pct:total?Math.round((done/total)*100):0,vol};
@@ -758,20 +784,26 @@ function ringHTML(exId,color,pct){
 }
 function refreshRing(exId,rtn){
   const ex=rtn.exercises.find(e=>e.id===exId);if(!ex)return;
-  const done=countDoneWorking(exId,ex.sets);
-  const pct=Math.min(done/ex.sets,1);
+  const done=countDoneWorking(exId);
+  const activeTotal=getActiveTotal(exId,ex.sets);
+  const pct=activeTotal>0?Math.min(done/activeTotal,1):1;
   const R=12,C=2*Math.PI*R;
   const arc=document.querySelector(`[data-ring="${exId}"] circle:last-child`);
   if(arc){arc.setAttribute("stroke-dashoffset",(C*(1-pct)).toFixed(2));arc.setAttribute("stroke",pct>0?rtn.color:"#252525");}
   const el=document.querySelector(`[data-done="${exId}"]`);
-  if(el){el.textContent=`${done}/${ex.sets}`;el.style.color=done>=ex.sets?rtn.color:"var(--muted)";}
+  if(el){el.textContent=`${done}/${activeTotal}`;el.style.color=done>=activeTotal&&activeTotal>0?rtn.color:"var(--muted)";}
 }
 function refreshSessionCard(rtn){
   const{done,total,pct,vol}=sessionProgress(rtn);
   const pctEl=document.getElementById("s-pct-val");if(pctEl){pctEl.textContent=pct;pctEl.style.color=pct===100?rtn.color:"var(--text)";}
   const barEl=document.getElementById("s-bar");if(barEl)barEl.style.width=pct+"%";
   const volEl=document.getElementById("s-vol");if(volEl)volEl.textContent=vol?`${vol.toLocaleString()} kg volume`:`${done}/${total} sets`;
-  if(pct===100){launchConfetti();}
+  
+  if(pct===100 && total>0){
+    if(!_lastConfetti){ launchConfetti(); _lastConfetti = true; }
+  } else {
+    _lastConfetti = false;
+  }
 }
 
 /* ════════════════════════════════
@@ -818,8 +850,29 @@ function toggleWU(exId,key,rtn){
 }
 
 /* ════════════════════════════════
-   SKIP
+   ACCORDION & SKIP / REMOVE
 ════════════════════════════════ */
+function toggleCard(exId) {
+  // Yield thread to allow keyboard visual collapse BEFORE redrawing huge DOM to prevent "freeze"
+  if(document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+  }
+  
+  const isCurrentlyOpen = openCards[exId];
+  
+  // Close all cards first (Accordion behavior)
+  Object.keys(openCards).forEach(key => {
+      openCards[key] = false;
+  });
+  
+  // Toggle the clicked one
+  openCards[exId] = !isCurrentlyOpen;
+  
+  setTimeout(() => {
+      renderTrain();
+  }, 10);
+}
+
 function isSkipped(exId){return sessionLogs[exId]?._skip===true;}
 function toggleSkip(exId,rtn){
   if(!sessionLogs[exId])sessionLogs[exId]={};
@@ -828,6 +881,17 @@ function toggleSkip(exId,rtn){
   scheduleAutoSave();
   renderTrain();
 }
+function removeFromSession(exId){
+  if(!confirm("Remove this exercise from your current session?")) return;
+  const idx = window._rtn.exercises.findIndex(e => e.id === exId);
+  if(idx >= 0) {
+    window._rtn.exercises.splice(idx, 1);
+    delete sessionLogs[exId];
+    delete openCards[exId];
+    scheduleAutoSave();
+    renderTrain();
+  }
+}
 
 /* ════════════════════════════════
    EXERCISE CARD HTML
@@ -835,14 +899,15 @@ function toggleSkip(exId,rtn){
 function exCardHTML(exDef,rtn,isCustom=false,idx=0){
   const exDb=getExDb(exDef.id);
   const skipped=isSkipped(exDef.id);
-  const done=countDoneWorking(exDef.id,exDef.sets);
-  const pct=Math.min(done/exDef.sets,1);
+  const done=countDoneWorking(exDef.id);
+  const activeTotal=getActiveTotal(exDef.id, exDef.sets);
+  const pct=activeTotal>0?Math.min(done/activeTotal,1):1;
   const isOpen=openCards[exDef.id]&&!skipped;
 
   // PR check
   const todaySets=sessionLogs[exDef.id]||{};
   let hasPR=false;
-  Object.entries(todaySets).forEach(([k,s])=>{if(!s.wu&&isPR(exDef.id,s.w))hasPR=true;});
+  Object.entries(todaySets).forEach(([k,s])=>{if(!isNaN(k)&&!s.wu&&isPR(exDef.id,s.w))hasPR=true;});
 
   let body="";
   if(isOpen){
@@ -889,15 +954,14 @@ function exCardHTML(exDef,rtn,isCustom=false,idx=0){
       <div class="col-heads"><div class="col-head">#</div><div class="col-head">W</div><div class="col-head" style="text-align:center">Weight</div><div class="col-head" style="text-align:center">Reps</div><div></div></div>
       ${wuRows}${rows}
       <div class="set-actions">
-        ${isCustom
-          ?`<button class="skip-btn danger" onclick="removeCustomFromSession('${exDef.id}')">Remove</button>`
-          :`<button class="skip-btn" onclick="toggleSkip('${exDef.id}',window._rtn)">Skip</button>`}
+        <button class="skip-btn danger" onclick="removeFromSession('${exDef.id}')">Remove</button>
+        <button class="skip-btn" onclick="toggleSkip('${exDef.id}',window._rtn)">Skip</button>
       </div>
     </div>`;
   }
 
   return `<div class="ex-card${isOpen?" open":""}${skipped?" skipped":""}" style="--ca:${rtn.color}" id="excard-${exDef.id}">
-    <button class="ex-hdr" onclick="openCards['${exDef.id}']=!openCards['${exDef.id}'];renderTrain()">
+    <button class="ex-hdr" onclick="toggleCard('${exDef.id}')">
       <span class="drag-handle" onmousedown="startDrag(event, 'train', ${idx})" ontouchstart="startDrag(event, 'train', ${idx})" onclick="event.stopPropagation()" style="padding-right: 8px;">⠿</span>
       ${ringHTML(exDef.id,rtn.color,pct)}
       <div style="flex:1;min-width:0; margin-left: 8px;">
@@ -907,7 +971,7 @@ function exCardHTML(exDef,rtn,isCustom=false,idx=0){
       <div class="ex-right">
         ${skipped?`<span class="badge-skip">Skipped</span>`:""}
         <span class="badge-pr" id="pr-${exDef.id}" style="display:${hasPR?"inline":"none"}">🏆 PR</span>
-        <span class="ex-done" data-done="${exDef.id}" style="color:${done>=exDef.sets&&done>0?rtn.color:"var(--muted)"}">${done}/${exDef.sets}</span>
+        <span class="ex-done" data-done="${exDef.id}" style="color:${done>=activeTotal&&activeTotal>0?rtn.color:"var(--muted)"}">${done}/${activeTotal}</span>
       </div>
       ${!skipped?`<span class="chev">›</span>`:""}
     </button>
@@ -990,6 +1054,7 @@ function renderTrain(){
       <textarea class="s-notes-inp" rows="2" placeholder="Energy, sleep, how you feel…" oninput="setSessionNotes(this.value)">${getSessionNotes()}</textarea>
     </div>
     <div class="ex-list" id="ex-list">${cardsHtml}</div>
+    <button class="btn-ghost" style="margin-top:8px; border-style:dashed;" onclick="openPicker('session')">+ Add Exercise</button>
     <button class="btn-red" style="margin-top:16px;background:${rtn.color}" onclick="finishSession()">${editHistDate?"Update Session":"Finish Workout"}</button>
     <button class="btn-ghost" style="margin-top:8px" onclick="cancelSession()">Cancel Session</button>
     <div style="height:8px"></div>`;
@@ -998,6 +1063,7 @@ function renderTrain(){
 function startSession(id){
   // Check for autosave
   activeRtnId=id;sessionLogs={};openCards={};editHistDate=null;editHistIdx=null;
+  _lastConfetti = false;
   renderTrain();
 }
 function cancelSession(){
@@ -1102,7 +1168,7 @@ function renderBuilder(){
         <input class="b-inp wide" value="${ex.rep||'8–12'}" title="Rep range" placeholder="reps" oninput="B.exs[${i}].rep=this.value"/>
         <button class="b-toggle${ex.wu?" on":""}" style="--tc:#1a8fff" onclick="B.exs[${i}].wu=!B.exs[${i}].wu;renderBuilder()">W</button>
         ${hasNext?`<button class="b-toggle${ex.ss?" on":""}" style="--tc:${B.color}" onclick="B.exs[${i}].ss=!B.exs[${i}].ss;renderBuilder()">SS</button>`:""}
-        <button class="b-del" onclick="B.exs.splice(${i},1);renderBuilder()">✕</button>
+        <button class="b-del" onclick="event.stopPropagation(); B.exs.splice(${i},1);renderBuilder()">🗑</button>
       </div>
     </div>`;
   }).join("")||`<div class="chart-empty" style="padding:16px 0">Add exercises below</div>`;
@@ -1134,7 +1200,7 @@ function deleteRoutine(){
 /* ════════════════════════════════
    PICKER
 ════════════════════════════════ */
-function openPicker(){P.sel.clear();renderPicker();document.getElementById("picker-modal").classList.add("show");}
+function openPicker(mode="builder"){P.mode=mode; P.sel.clear();renderPicker();document.getElementById("picker-modal").classList.add("show");}
 function closePicker(){document.getElementById("picker-modal").classList.remove("show");}
 function renderPicker(){
   const allEx=[...DB,...D.customDB];
@@ -1154,9 +1220,15 @@ function renderPicker(){
 function confirmPicker(){
   P.sel.forEach(id=>{
     const db=getExDb(id);
-    B.exs.push({id,sets:3,rep:"8–12",rest:db.rest||60,ss:false,wu:false});
+    if(P.mode === "builder") {
+      B.exs.push({id,sets:3,rep:"8–12",rest:db.rest||60,ss:false,wu:false});
+    } else if (P.mode === "session") {
+      window._rtn.exercises.push({id,sets:3,rep:"8–12",rest:db.rest||60,ss:false,wu:false});
+      scheduleAutoSave();
+    }
   });
-  closePicker();renderBuilder();
+  closePicker();
+  if(P.mode === "builder") renderBuilder(); else renderTrain();
 }
 function addCustomEx(){
   const inp=document.getElementById("custom-ex-name");
@@ -1164,8 +1236,17 @@ function addCustomEx(){
   const id="cstm_"+Date.now();
   D.customDB.push({id,name,muscle:"Custom",group:"Custom",rest:60});
   saveData();
-  B.exs.push({id,sets:3,rep:"8–12",rest:60,ss:false,wu:false});
-  inp.value="";renderPicker();renderBuilder();toast("✓ Custom exercise added");
+  
+  if(P.mode === "builder") {
+    B.exs.push({id,sets:3,rep:"8–12",rest:60,ss:false,wu:false});
+  } else if (P.mode === "session") {
+    window._rtn.exercises.push({id,sets:3,rep:"8–12",rest:60,ss:false,wu:false});
+    scheduleAutoSave();
+  }
+  
+  inp.value="";renderPicker();
+  if(P.mode === "builder") renderBuilder(); else renderTrain();
+  toast("✓ Custom exercise added");
 }
 function deleteCustomEx(id,e){
   e.stopPropagation();
@@ -1182,7 +1263,7 @@ function getExHistory(exId){
   Object.entries(D.history).sort(([a],[b])=>a.localeCompare(b)).forEach(([date,sessions])=>{
     sessions.forEach(sess=>{
       const sets=sess.logs[exId]||{};
-      const ws=Object.entries(sets).filter(([k,s])=>!s.wu&&!s._skip).map(([,s])=>parseFloat(s.w)||0).filter(w=>w>0);
+      const ws=Object.entries(sets).filter(([k,s])=>!isNaN(k)&&!s.wu&&!s._skip).map(([,s])=>parseFloat(s.w)||0).filter(w=>w>0);
       if(ws.length)pts.push({date,max:Math.max(...ws)});
     });
   });
@@ -1306,7 +1387,7 @@ function renderHistory(){
         if(exId==="__notes")return"";
         const db=getExDb(exId);
         const pills=Object.entries(sets).filter(([k,s])=>s.w||s.r).map(([k,s])=>{
-          const isWU=s.wu;
+          const isWU=s.wu || isNaN(k);
           return `<span class="hist-pill${isWU?" wu":""}">${isWU?"W ":""}${s.w||"—"}kg×${s.r||"—"}</span>`;
         }).join("");
         if(!pills)return"";
@@ -1496,7 +1577,10 @@ document.addEventListener("focusin",e=>{
     if(bCancel) bCancel.style.display="none";
 
     setTimeout(() => {
-      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Ensure the element is still attached before attempting to scroll to it
+      if (e.target && document.body.contains(e.target)) {
+        e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }, 300);
   }
 });
